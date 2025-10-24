@@ -1,125 +1,126 @@
+// lib/main.dart
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'theme/palette.dart'; // 방금 만든 AppPalette 파일
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  Get.put(ThemeController(), permanent: true);
   runApp(const MyApp());
+}
+
+/// 테마 전환 컨트롤러
+class ThemeController extends GetxController {
+  final Rx<ThemeMode> mode = ThemeMode.system.obs;
+
+  void setMode(ThemeMode m) {
+    mode.value = m;
+    Get.changeThemeMode(m);
+  }
+
+  void toggle() {
+    final isDark = (mode.value == ThemeMode.dark) ||
+        (mode.value == ThemeMode.system &&
+            WidgetsBinding.instance.platformDispatcher.platformBrightness ==
+                Brightness.dark);
+    setMode(isDark ? ThemeMode.light : ThemeMode.dark);
+  }
 }
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // TRY THIS: Try running your application with "flutter run". You'll see
-        // the application has a purple toolbar. Then, without quitting the app,
-        // try changing the seedColor in the colorScheme below to Colors.green
-        // and then invoke "hot reload" (save your changes or press the "hot
-        // reload" button in a Flutter-supported IDE, or press "r" if you used
-        // the command line to start the app).
-        //
-        // Notice that the counter didn't reset back to zero; the application
-        // state is not lost during the reload. To reset the state, use hot
-        // restart instead.
-        //
-        // This works for code too, not just values: Most code changes can be
-        // tested with just a hot reload.
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-        useMaterial3: true,
-      ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
-    );
-  }
-}
+    final themeC = Get.find<ThemeController>();
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
-  final String title;
-
-  @override
-  State<MyHomePage> createState() => _MyHomePageState();
-}
-
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
-
-  void _incrementCounter() {
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
+    return Obx(() {
+      return GetMaterialApp(
+        title: 'Palette Demo',
+        debugShowCheckedModeBanner: false,
+        // 라이트 테마에 AppPalette.light 주입
+        theme: ThemeData(
+          useMaterial3: true,
+          scaffoldBackgroundColor: AppPalette.light.bgFilled,
+          extensions: const [AppPalette.light],
+        ),
+        // 다크 테마에 AppPalette.dark 주입
+        darkTheme: ThemeData(
+          useMaterial3: true,
+          scaffoldBackgroundColor: AppPalette.dark.bgFilled,
+          extensions: const [AppPalette.dark],
+        ),
+        themeMode: themeC.mode.value, // GetX로 모드 제어
+        home: const HomePage(),
+      );
     });
   }
+}
+
+class HomePage extends StatelessWidget {
+  const HomePage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
+    final p = context.appPalette; // 확장으로 바로 팔레트 접근
+    final themeC = Get.find<ThemeController>();
+
     return Scaffold(
       appBar: AppBar(
-        // TRY THIS: Try changing the color here to a specific color (to
-        // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
-        // change color while the other colors stay the same.
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
+        backgroundColor: p.bgEmpty,
+        title: Text('AppPalette x GetX', style: TextStyle(color: p.typo900)),
+        centerTitle: false,
       ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          //
-          // TRY THIS: Invoke "debug painting" (choose the "Toggle Debug Paint"
-          // action in the IDE, or press "p" in the console), to see the
-          // wireframe for each widget.
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Text(
-              'You have pushed the button this many times:',
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: p.bgEmpty,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: p.stroke200),
             ),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('타이틀(typo900)', style: TextStyle(color: p.typo900, fontSize: 18, fontWeight: FontWeight.w600)),
+                const SizedBox(height: 8),
+                Text('본문(typo600)', style: TextStyle(color: p.typo600)),
+                const SizedBox(height: 8),
+                Divider(color: p.stroke100),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Icon(Icons.fiber_manual_record, color: p.dotPrimary, size: 12),
+                    const SizedBox(width: 8),
+                    Text('상태: 활성', style: TextStyle(color: p.typo800)),
+                  ],
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 16),
+          FilledButton(
+            onPressed: themeC.toggle,
+            style: FilledButton.styleFrom(
+              backgroundColor: p.dotPrimary, // 포인트 컬러도 재사용 가능
+              foregroundColor: p.bgEmpty,
+            ),
+            child: const Text('라이트/다크 토글'),
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            children: [
+              OutlinedButton(onPressed: () => themeC.setMode(ThemeMode.light), child: const Text('Light')),
+              OutlinedButton(onPressed: () => themeC.setMode(ThemeMode.dark), child: const Text('Dark')),
+              OutlinedButton(onPressed: () => themeC.setMode(ThemeMode.system), child: const Text('System')),
+            ],
+          ),
+        ],
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
+      backgroundColor: p.bgFilled,
     );
   }
 }
