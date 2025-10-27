@@ -1,3 +1,4 @@
+// lib/src/pages/time_settings/time_add_sheet.dart
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../controllers/time_settings_controller.dart';
@@ -14,13 +15,13 @@ class TimeAddSheet extends StatefulWidget {
 
 class _TimeAddSheetState extends State<TimeAddSheet> {
   TimeOfDay _time = TimeOfDay.now();
-  final Set<int> _weekdays = {}; // 예시: 월/수/금
+  final Set<int> _weekdays = {};
 
   @override
   Widget build(BuildContext context) {
     final p = context.appPalette;
     final timeC = Get.find<TimeSettingsController>();
-    final maxH = MediaQuery.of(context).size.height * 0.95; // 최대 높이 제한
+    final maxH = MediaQuery.of(context).size.height * 0.95;
 
     return Container(
       padding: EdgeInsets.only(
@@ -54,14 +55,11 @@ class _TimeAddSheetState extends State<TimeAddSheet> {
             padding: EdgeInsets.zero,
             child: Row(
               children: [
-                // 닫기 버튼 (왼쪽)
                 IconButton(
                   icon: const Icon(Icons.close),
                   onPressed: () => Navigator.pop(context),
                   splashRadius: 24,
                 ),
-
-                // 가운데 타이틀 (Expanded로 중앙 정렬)
                 const Expanded(
                   child: Center(
                     child: Text(
@@ -73,8 +71,6 @@ class _TimeAddSheetState extends State<TimeAddSheet> {
                     ),
                   ),
                 ),
-
-                // 오른쪽 여백 맞추기 (닫기 버튼과 균형)
                 const SizedBox(width: 48),
               ],
             ),
@@ -82,8 +78,7 @@ class _TimeAddSheetState extends State<TimeAddSheet> {
           const SizedBox(height: 16),
           Expanded(
             flex: 2,
-            child:
-            TimePickerWheel(
+            child: TimePickerWheel(
               initial: _time,
               onChanged: (t) => setState(() => _time = t),
             ),
@@ -101,7 +96,7 @@ class _TimeAddSheetState extends State<TimeAddSheet> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: List.generate(7, (i) {
-                    final w = i+1;
+                    final w = i + 1;
                     final taken = timeC.isWeekdayTaken(w);
                     final selected = _weekdays.contains(w);
                     return DayChip(
@@ -126,26 +121,35 @@ class _TimeAddSheetState extends State<TimeAddSheet> {
           SizedBox(
             width: double.infinity,
             height: 52,
-            child: ElevatedButton(
-              onPressed: _weekdays.isEmpty ? null : () {
-                // 디버깅 로그 출력
-                print('저장 버튼 클릭됨: 시간=$_time, 요일=$_weekdays');
-
-                timeC.add(_time, _weekdays);
-                Get.back();
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: p.typo900,
-                disabledBackgroundColor: p.stroke200,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
-              ),
-              child: Text('저장',style: TextStyle(
-                color: p.bgEmpty,
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                height: 1.62,
-                letterSpacing: -0.10,)),
-            ),
+            child: Obx(() {
+              return ElevatedButton(
+                onPressed: (_weekdays.isEmpty || timeC.isLoading.value)
+                    ? null
+                    : () async {
+                  await timeC.add(_time, _weekdays);
+                  Get.back();
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: p.typo900,
+                  disabledBackgroundColor: p.stroke200,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
+                ),
+                child: timeC.isLoading.value
+                    ? const SizedBox(
+                  height: 20,
+                  width: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                )
+                    : Text(
+                  '저장',
+                  style: TextStyle(
+                    color: p.bgEmpty,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              );
+            }),
           ),
         ],
       ),

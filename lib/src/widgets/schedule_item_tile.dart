@@ -62,7 +62,6 @@ class ScheduleItemTile extends StatelessWidget {
       return '$ampm $h12:$mm';
     }
 
-    // === 원래 콘텐츠 ===
     final content = Container(
       color: rowBg,
       child: Row(

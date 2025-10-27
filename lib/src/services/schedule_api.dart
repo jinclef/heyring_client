@@ -76,7 +76,7 @@ class ScheduleApi {
     required int scheduleId,
     TimeOfDay? startTime,
     TimeOfDay? endTime,
-    ScheduleStatus? status,
+    String? status,
   }) async {
     try {
       final data = <String, dynamic>{};
@@ -88,7 +88,7 @@ class ScheduleApi {
         data['end_time'] = '${endTime.hour.toString().padLeft(2, '0')}:${endTime.minute.toString().padLeft(2, '0')}';
       }
       if (status != null) {
-        data['status'] = status.value;
+        data['status'] = status;
       }
 
       final response = await _api.dio.put(

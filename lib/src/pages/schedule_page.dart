@@ -6,6 +6,7 @@ import 'package:get/get.dart';
 import '../../theme/palette.dart';
 import '../controllers/schedule_controller.dart';
 import '../controllers/auth_controller.dart';
+import '../controllers/time_settings_controller.dart';
 import '../routes/app_routes.dart';
 import '../widgets/schedule_item_tile.dart';
 
@@ -68,8 +69,15 @@ class SchedulePage extends GetView<ScheduleController> with WidgetsBindingObserv
           IconButton(
             icon: const Icon(Icons.settings, color: Color(0xFFBEBEBE)),
             onPressed: () async {
+              // 설정 페이지로 이동하기 전에 최신 데이터 가져오기
+              if (Get.isRegistered<TimeSettingsController>()) {
+                await Get.find<TimeSettingsController>().fetchFromServer();
+              }
+
               await Get.toNamed(Routes.timeSettingsHome);
-              // 돌아왔을 때 스크롤
+
+              // 돌아왔을 때 스케줄 새로고침 및 오늘로 스크롤
+              await controller.refresh();
               Future.delayed(const Duration(milliseconds: 100), () {
                 controller.scrollToToday();
               });
@@ -94,14 +102,9 @@ class SchedulePage extends GetView<ScheduleController> with WidgetsBindingObserv
                   itemCount: items.length,
                   separatorBuilder: (_, __) => Divider(height: 1, color: p.stroke100),
                   itemBuilder: (_, i) {
-                    final isToday = i == controller.todayIndex;
                     return ScheduleItemTile(
                       date: items[i].date,
                       callAt: items[i].callAt,
-                      // isCompleted: items[i].isCompleted,
-                      // isSkipped: items[i].isSkipped,
-                      // scheduleId: items[i].scheduleId,
-                      // isToday: isToday,
                     );
                   },
                 ),

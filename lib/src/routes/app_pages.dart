@@ -1,4 +1,5 @@
 import 'package:get/get.dart';
+import '../controllers/schedule_controller.dart';
 import '../pages/login_page.dart';
 import '../pages/schedule_page.dart';
 import '../pages/time_settings/time_settings_home_page.dart';
@@ -14,10 +15,15 @@ class AppPages {
       page: () => const LoginPage(),
       binding: InitialBinding(),
     ),
+    // lib/src/routes/app_pages.dart
     GetPage(
       name: Routes.schedule,
       page: () => const SchedulePage(),
-      binding: InitialBinding(),
+      binding: BindingsBuilder(() {
+        Get.lazyPut<ScheduleController>(() => ScheduleController());
+      }),
+      // 페이지 전환될 때마다 실행
+      transition: Transition.noTransition,
     ),
     GetPage(
       name: Routes.timeSettingsHome,
