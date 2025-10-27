@@ -62,10 +62,10 @@ class SchedulePage extends GetView<ScheduleController> with WidgetsBindingObserv
         )),
         centerTitle: true,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: controller.refresh,
-          ),
+          // IconButton(
+          //   icon: const Icon(Icons.refresh),
+          //   onPressed: controller.refresh,
+          // ),
           IconButton(
             icon: const Icon(Icons.settings, color: Color(0xFFBEBEBE)),
             onPressed: () async {

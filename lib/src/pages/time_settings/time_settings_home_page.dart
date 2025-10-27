@@ -8,6 +8,7 @@ import '../../routes/app_routes.dart';
 import '../../../theme/palette.dart';
 import '../../widgets/time_row_tile.dart';
 import 'time_add_sheet.dart';
+import 'time_edit_sheet.dart';
 
 class TimeSettingsHomePage extends GetView<TimeSettingsController> {
   const TimeSettingsHomePage({super.key});
@@ -74,7 +75,14 @@ class TimeSettingsHomePage extends GetView<TimeSettingsController> {
             return TimeRowTile(
               weekText: _weekLabel(ct.weekdays),
               timeText: _timeLabel(ct.time),
-              onTap: () => Get.toNamed('${Routes.timeEdit}?id=${ct.uniqueKey}'),
+              onTap: () {
+                showModalBottomSheet(
+                  context: context,
+                  isScrollControlled: true,
+                  backgroundColor: Colors.transparent,
+                  builder: (_) => TimeEditSheet(callTimeId: ct.uniqueKey),
+                );
+              },
             );
           },
         );
@@ -86,10 +94,7 @@ class TimeSettingsHomePage extends GetView<TimeSettingsController> {
           showModalBottomSheet(
             context: context,
             isScrollControlled: true,
-            backgroundColor: p.bgFilled,
-            shape: const RoundedRectangleBorder(
-              borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-            ),
+            backgroundColor: Colors.transparent,
             builder: (_) => const TimeAddSheet(),
           );
         },

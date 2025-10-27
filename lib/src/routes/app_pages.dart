@@ -3,7 +3,7 @@ import '../controllers/schedule_controller.dart';
 import '../pages/login_page.dart';
 import '../pages/schedule_page.dart';
 import '../pages/time_settings/time_settings_home_page.dart';
-import '../pages/time_settings/time_edit_page.dart';
+import '../pages/time_settings/time_edit_sheet.dart';
 import '../bindings/initial_binding.dart';
 import '../controllers/time_settings_controller.dart';
 import '../routes/app_routes.dart';
@@ -34,7 +34,7 @@ class AppPages {
       name: Routes.timeEdit,
       page: () {
         final id = Get.parameters['id']!;
-        return TimeEditPage(callTimeId: id);
+        return TimeEditSheet(callTimeId: id);
       },
       binding: BindingsBuilder(() {
         // 공용 컨트롤러 사용
