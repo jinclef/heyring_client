@@ -1,15 +1,25 @@
 import 'dart:math' as math;
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import '../../theme/palette.dart';
-// 프로젝트 경로에 맞게 조정하세요.
+import '../controllers/schedule_controller.dart';
+import 'cupertino_time_picker.dart';
 import 'hatch_overlay.dart' show HatchPainter;
 
 class ScheduleItemTile extends StatelessWidget {
   final DateTime date;
   final TimeOfDay? callAt;
+  final int? scheduleId;
+  final bool isSkipped;
 
-  const ScheduleItemTile({super.key, required this.date, required this.callAt});
+  const ScheduleItemTile({
+    super.key,
+    required this.date,
+    required this.callAt,
+    this.scheduleId,
+    this.isSkipped = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -39,7 +49,7 @@ class ScheduleItemTile extends StatelessWidget {
       fontWeight: today ? FontWeight.w700 : FontWeight.w500,
     );
 
-    if (isCompleted) {
+    if (isCompleted || isSkipped) {
       rowBg = pastDay || today ? p.bgEmpty : p.bgFilled;
       timeStyle = TextStyle(color: p.stroke200);
       dayStyle = TextStyle(color: p.stroke200);
@@ -54,6 +64,10 @@ class ScheduleItemTile extends StatelessWidget {
     }
 
     String timeLabel() {
+      if (isSkipped){
+        if(today) return "예정된 전화 없음";
+        return "휴식";
+      }
       if (!hasCall) return ' ';
       final t = callAt!;
       final h12 = t.hourOfPeriod == 0 ? 12 : t.hourOfPeriod;
@@ -118,37 +132,12 @@ class ScheduleItemTile extends StatelessWidget {
                       ],
                     ),
                   ),
-                  if (!isCompleted)
+                  if (hasCall && scheduleId != null && !isCompleted)
                     IconButton(
                       icon: Icon(Icons.more_horiz, color: p.dotMuted),
                       splashRadius: 20,
                       onPressed: () {
-                        showCupertinoModalPopup(
-                          context: context,
-                          builder: (_) => CupertinoActionSheet(
-                            actions: [
-                              CupertinoActionSheetAction(
-                                onPressed: () {
-                                  Navigator.pop(context);
-                                  // 수정 로직
-                                },
-                                child: const Text('수정하기'),
-                              ),
-                              CupertinoActionSheetAction(
-                                onPressed: () {
-                                  Navigator.pop(context);
-                                  // 삭제/비활성 로직
-                                },
-                                isDestructiveAction: true,
-                                child: const Text('쉬어가기'),
-                              ),
-                            ],
-                            cancelButton: CupertinoActionSheetAction(
-                              onPressed: () => Navigator.pop(context),
-                              child: const Text('취소'),
-                            ),
-                          ),
-                        );
+                        _showActionSheet(context, scheduleId!);
                       },
                     ),
                 ],
@@ -170,6 +159,195 @@ class ScheduleItemTile extends StatelessWidget {
       )
           : null,
       child: content,
+    );
+  }
+
+  // lib/src/widgets/schedule_item_tile.dart의 _showActionSheet 메서드 수정
+
+  void _showActionSheet(BuildContext context, int scheduleId) {
+    final controller = Get.find<ScheduleController>();
+
+    showCupertinoModalPopup(
+      context: context,
+      builder: (_) => CupertinoActionSheet(
+        actions: [
+          CupertinoActionSheetAction(
+            onPressed: () {
+              Navigator.pop(context);
+              _showEditDialog(context, scheduleId);
+            },
+            child: const Text('수정하기'),
+          ),
+          CupertinoActionSheetAction(
+            onPressed: () async {
+              Navigator.pop(context);
+
+              // 로딩 표시
+              Get.dialog(
+                const Center(child: CircularProgressIndicator()),
+                barrierDismissible: false,
+              );
+
+              final success = isSkipped
+              ? await controller.restoreSchedule(scheduleId)
+              : await controller.skipSchedule(scheduleId);
+
+              Get.back(); // 로딩 닫기
+
+              if (success) {
+                // _showSuccessBannerSafe('전화 시간이 수정되었어요.');
+              } else {
+                Get.snackbar(
+                  '오류',
+                  '일정 건너뛰기에 실패했습니다',
+                  snackPosition: SnackPosition.BOTTOM,
+                  backgroundColor: Colors.red.shade100,
+                );
+              }
+            },
+            isDestructiveAction: true,
+            child: isSkipped ? Text("전화받기") : Text('쉬어가기'),
+          ),
+        ],
+        cancelButton: CupertinoActionSheetAction(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('취소'),
+        ),
+      ),
+    );
+  }
+
+  void _showEditDialog(BuildContext context, int scheduleId) {
+    final controller = Get.find<ScheduleController>();
+    final p = context.appPalette;
+    TimeOfDay selectedTime = callAt ?? TimeOfDay.now();
+
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Container(
+          width: MediaQuery.of(context).size.width * 0.85,
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // TimePickerWheel 사용
+              SizedBox(
+                height: 200,
+                child: TimePickerWheel(
+                  initial: selectedTime,
+                  onChanged: (time) {
+                    selectedTime = time;
+                  },
+                ),
+              ),
+
+              const SizedBox(height: 20),
+
+              // 저장 버튼
+              SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: ElevatedButton(
+                  onPressed: () async {
+                    Navigator.pop(context);
+
+                    // 로딩 표시
+                    Get.dialog(
+                      const Center(child: CircularProgressIndicator()),
+                      barrierDismissible: false,
+                    );
+
+                    final success = await controller.updateScheduleTime(
+                      scheduleId,
+                      selectedTime,
+                    );
+
+                    Get.back(); // 로딩 닫기
+
+                    if (success) {
+                      _showSuccessBannerSafe('전화 시간이 수정되었어요.');
+                    } else {
+                      Get.snackbar(
+                        '오류',
+                        '일정 수정에 실패했습니다',
+                        snackPosition: SnackPosition.BOTTOM,
+                        backgroundColor: Colors.red.shade100,
+                      );
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: p.typo900,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: Text(
+                    '저장',
+                    style: TextStyle(
+                      color: p.bgEmpty,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showSuccessBannerSafe(String message) {
+    Get.showSnackbar(
+      GetSnackBar(
+        message: message,
+        messageText: Row(
+          children: [
+            Container(
+              width: 24,
+              height: 24,
+              decoration: const BoxDecoration(
+                color: Color(0xFF2E2E2E), // stroke200
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.check,
+                color: Colors.white,
+                size: 16,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                message,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF2E2E2E),
+                ),
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: Colors.white,
+        margin: const EdgeInsets.all(16),
+        borderRadius: 12,
+        duration: const Duration(seconds: 2),
+        boxShadows: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+        snackPosition: SnackPosition.TOP,
+      ),
     );
   }
 }

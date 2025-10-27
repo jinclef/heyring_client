@@ -133,20 +133,65 @@ class ScheduleController extends GetxController {
       isLoading.value = false;
     }
   }
-  Future<bool> restoreSchedule(int scheduleId) async {
-    final success = await _api.restoreSchedule(scheduleId);
-    if (success) {
-      await fetchTwoWeeks();
+
+  Future<bool> updateScheduleTime(int scheduleId, TimeOfDay newTime) async {
+    try {
+      final schedule = await _api.updateSchedule(
+        scheduleId: scheduleId,
+        startTime: newTime,
+      );
+
+      if (schedule != null) {
+        await fetchTwoWeeks();
+        return true;
+      }
+      return false;
+    } catch (e) {
+      print('Update schedule time error: $e');
+      return false;
     }
-    return success;
   }
 
-  Future<bool> deleteSchedule(int scheduleId) async {
-    final success = await _api.deleteSchedule(scheduleId);
-    if (success) {
-      await fetchTwoWeeks();
+// 스케줄 건너뛰기
+  Future<bool> skipSchedule(int scheduleId) async {
+    try {
+      final success = await _api.skipSchedule(scheduleId);
+      if (success) {
+        await fetchTwoWeeks();
+      }
+      return success;
+    } catch (e) {
+      print('Skip schedule error: $e');
+      return false;
     }
-    return success;
+  }
+
+// 스케줄 복원
+  Future<bool> restoreSchedule(int scheduleId) async {
+    try {
+      final success = await _api.restoreSchedule(scheduleId);
+      if (success) {
+        await fetchTwoWeeks();
+      }
+      return success;
+    } catch (e) {
+      print('Restore schedule error: $e');
+      return false;
+    }
+  }
+
+// 스케줄 삭제
+  Future<bool> deleteSchedule(int scheduleId) async {
+    try {
+      final success = await _api.deleteSchedule(scheduleId);
+      if (success) {
+        await fetchTwoWeeks();
+      }
+      return success;
+    } catch (e) {
+      print('Delete schedule error: $e');
+      return false;
+    }
   }
 
   // 새로고침 - 항상 오늘로

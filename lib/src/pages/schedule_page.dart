@@ -105,6 +105,8 @@ class SchedulePage extends GetView<ScheduleController> with WidgetsBindingObserv
                     return ScheduleItemTile(
                       date: items[i].date,
                       callAt: items[i].callAt,
+                      scheduleId: items[i].scheduleId,
+                      isSkipped: items[i].isSkipped,
                     );
                   },
                 ),
