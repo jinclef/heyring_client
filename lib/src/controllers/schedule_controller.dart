@@ -1,95 +1,175 @@
+// lib/src/controllers/schedule_controller.dart
 import 'package:get/get.dart';
-import '../services/schedule_api.dart';
 import 'package:flutter/material.dart';
-import '../controllers/notification_controller.dart';
-
-class Schedule {
-  final DateTime date;
-  final int? callHour;
-  final int? callMinute;
-  final bool isCompleted;
-
-  Schedule({
-    required this.date,
-    required this.isCompleted,
-    this.callHour,
-    this.callMinute,
-  });
-
-  factory Schedule.fromDto(ScheduleDto d) => Schedule(
-    date: d.date,
-    isCompleted: d.isCompleted,
-    callHour: d.callHour,
-    callMinute: d.callMinute,
-  );
-
-  TimeOfDay? get callAt => (callHour != null && callMinute != null)
-      ? TimeOfDay(hour: callHour!, minute: callMinute!)
-      : null;
-}
+import '../services/schedule_api.dart';
+import '../models/schedule_model.dart';
 
 class DayItem {
   final DateTime date;
   final TimeOfDay? callAt;
   final bool isCompleted;
-  DayItem({required this.date, required this.callAt, required this.isCompleted});
+  final bool isSkipped;
+  final int? scheduleId;
+
+  DayItem({
+    required this.date,
+    this.callAt,
+    required this.isCompleted,
+    required this.isSkipped,
+    this.scheduleId,
+  });
 }
 
 class ScheduleController extends GetxController {
-  final currentMonth = DateTime(DateTime.now().year, DateTime.now().month, 1).obs;
   final schedules = <Schedule>[].obs;
+  final isLoading = false.obs;
+  final scrollController = ScrollController();
 
   final _api = ScheduleApi();
 
-  String monthTitleKr(DateTime d) => '${d.year}년 ${d.month}월';
+  // 이번주 월요일 계산
+  DateTime get thisWeekMonday {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final weekday = today.weekday; // 1(월) ~ 7(일)
+    return today.subtract(Duration(days: weekday - 1));
+  }
 
-  List<DayItem> get days => schedules
-      .map((s) => DayItem(date: s.date, callAt: s.callAt, isCompleted: s.isCompleted))
-      .toList();
+  // 다음주 일요일 계산
+  DateTime get nextWeekSunday {
+    return thisWeekMonday.add(const Duration(days: 13));
+  }
 
-  Future<void> fetchMonth(DateTime month) async {
-    final items = await _api.fetchMonth(year: month.year, month: month.month);
-    final list = items.map((e) => Schedule.fromDto(e)).toList();
-    schedules.assignAll(list);
+  // 오늘의 인덱스 (스크롤 위치용)
+  int get todayIndex {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final start = thisWeekMonday;
+    return today.difference(start).inDays;
+  }
 
-    // 예약 알림 등록 (NotificationController가 등록되어 있을 때만)
-    if (Get.isRegistered<NotificationController>()) {
-      final notif = Get.find<NotificationController>();
-      for (final s in schedules) {
-        if (s.callHour != null && s.callMinute != null) {
-          final when = DateTime(s.date.year, s.date.month, s.date.day, s.callHour!, s.callMinute!);
-          if (when.isAfter(DateTime.now())) {
-            final id = when.millisecondsSinceEpoch & 0x7FFFFFFF;
-            try {
-              await notif.scheduleOnce(
-                id: id,
-                localTime: when,
-                title: '통화 알림',
-                body:
-                '${s.date.month}월 ${s.date.day}일 ${s.callHour!.toString().padLeft(2, '0')}:${s.callMinute!.toString().padLeft(2, '0')} 통화 예정',
-              );
-            } catch (_) {}
-          }
-        }
+  // 현재 표시 중인 날짜 범위의 월/년 정보 (표시용)
+  String get displayMonthYear {
+    schedules.length; // reactive하게 만들기
+
+    final start = thisWeekMonday;
+    final end = nextWeekSunday;
+
+    if (start.month == end.month) {
+      return '${start.year}년 ${start.month}월';
+    }
+    return '${start.year}년 ${start.month}월 - ${end.month}월';
+  }
+
+  List<DayItem> get days {
+    final start = thisWeekMonday;
+    final end = nextWeekSunday;
+
+    final items = <DayItem>[];
+    for (var d = start; d.isBefore(end.add(const Duration(days: 1))); d = d.add(const Duration(days: 1))) {
+      final daySchedules = schedules.where((s) =>
+      s.scheduledDate.year == d.year &&
+          s.scheduledDate.month == d.month &&
+          s.scheduledDate.day == d.day
+      ).toList();
+
+      if (daySchedules.isNotEmpty) {
+        final firstSchedule = daySchedules.first;
+        items.add(DayItem(
+          date: d,
+          callAt: firstSchedule.scheduledTime,
+          isCompleted: firstSchedule.isCompleted,
+          isSkipped: firstSchedule.isSkipped,
+          scheduleId: firstSchedule.id,
+        ));
+      } else {
+        items.add(DayItem(
+          date: d,
+          callAt: null,
+          isCompleted: false,
+          isSkipped: false,
+          scheduleId: null,
+        ));
       }
     }
+
+    return items;
+  }
+
+  // 오늘로 스크롤 (항상 실행)
+  void scrollToToday() {
+    if (!scrollController.hasClients) {
+      Future.delayed(const Duration(milliseconds: 50), scrollToToday);
+      return;
+    }
+
+    final index = todayIndex;
+    if (index >= 0 && index < days.length) {
+      final itemHeight = 70.0; // schedule_item_tile 높이.
+      scrollController.jumpTo(index * itemHeight);
+    }
+  }
+
+  Future<void> fetchTwoWeeks() async {
+    try {
+      isLoading.value = true;
+
+      final start = thisWeekMonday;
+      final end = nextWeekSunday;
+
+      final items = await _api.fetchSchedules(
+        startDate: start,
+        endDate: end,
+      );
+
+      schedules.assignAll(items);
+
+      // 데이터 로드 후 항상 오늘로 스크롤
+      Future.delayed(const Duration(milliseconds: 100), scrollToToday);
+    } catch (e) {
+      print('fetchTwoWeeks error: $e');
+      // 401 에러는 인터셉터에서 처리되어 자동 로그아웃됨
+    } finally {
+      isLoading.value = false;
+    }
+  }
+  Future<bool> restoreSchedule(int scheduleId) async {
+    final success = await _api.restoreSchedule(scheduleId);
+    if (success) {
+      await fetchTwoWeeks();
+    }
+    return success;
+  }
+
+  Future<bool> deleteSchedule(int scheduleId) async {
+    final success = await _api.deleteSchedule(scheduleId);
+    if (success) {
+      await fetchTwoWeeks();
+    }
+    return success;
+  }
+
+  // 새로고침 - 항상 오늘로
+  Future<void> refresh() async {
+    await fetchTwoWeeks();
   }
 
   @override
   void onInit() {
     super.onInit();
-    fetchMonth(currentMonth.value);
+    fetchTwoWeeks();
   }
 
-  void goPrevMonth() {
-    final d = currentMonth.value;
-    currentMonth.value = DateTime(d.year, d.month - 1, 1);
-    fetchMonth(currentMonth.value);
+  @override
+  void onReady() {
+    super.onReady();
+    // 페이지가 준비되면 스크롤
+    scrollToToday();
   }
 
-  void goNextMonth() {
-    final d = currentMonth.value;
-    currentMonth.value = DateTime(d.year, d.month + 1, 1);
-    fetchMonth(currentMonth.value);
+  @override
+  void onClose() {
+    scrollController.dispose();
+    super.onClose();
   }
 }

@@ -1,7 +1,9 @@
+// lib/src/services/api_client.dart
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get/get.dart' as gx;
 import '../routes/app_routes.dart';
+import '../controllers/auth_controller.dart';
 
 class ApiClient {
   ApiClient._();
@@ -15,8 +17,7 @@ class ApiClient {
     baseUrl: _rawBase,
     connectTimeout: const Duration(seconds: 10),
     receiveTimeout: const Duration(seconds: 10),
-    // 4xx는 onError로 보내서 한곳에서 처리
-    validateStatus: (status) => status != null && status < 400,
+    validateStatus: (status) => status != null && status < 500, // 401도 response로 처리
   ))
     ..interceptors.add(
       InterceptorsWrapper(
@@ -29,24 +30,36 @@ class ApiClient {
         },
         onResponse: (response, handler) async {
           if (response.statusCode == 401) {
+            // 토큰 삭제
             await _storage.delete(key: 'auth_token');
-            if (gx.Get.currentRoute != Routes.login) {
-              gx.Get.offAllNamed(Routes.login);
+            await _storage.delete(key: 'refresh_token');
+
+            // AuthController를 통해 로그아웃 처리
+            if (gx.Get.isRegistered<AuthController>()) {
+              await gx.Get.find<AuthController>().logout();
             }
-            // reject/throw 하지 않고, 조용히 마무리
-            return handler.resolve(Response(
-              requestOptions: response.requestOptions,
-              statusCode: 401,
-              data: null, // 호출부에서 안전하게 처리
-            ));
+
+            // 에러 반환
+            return handler.reject(
+              DioException(
+                requestOptions: response.requestOptions,
+                response: response,
+                type: DioExceptionType.badResponse,
+                error: 'Unauthorized',
+              ),
+            );
           }
           handler.next(response);
         },
         onError: (e, handler) async {
           if (e.response?.statusCode == 401) {
+            // 토큰 삭제
             await _storage.delete(key: 'auth_token');
-            if (gx.Get.currentRoute != Routes.login) {
-              gx.Get.offAllNamed(Routes.login);
+            await _storage.delete(key: 'refresh_token');
+
+            // AuthController를 통해 로그아웃 처리
+            if (gx.Get.isRegistered<AuthController>()) {
+              await gx.Get.find<AuthController>().logout();
             }
           }
           handler.next(e);

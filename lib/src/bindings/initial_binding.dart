@@ -10,6 +10,6 @@ class InitialBinding extends Bindings {
     // Get.put(StorageService(), permanent: true);
     Get.put(AuthController(), permanent: true);
     Get.put(TimeSettingsController(), permanent: true);
-    Get.put(ScheduleController(), permanent: true);
+    Get.put(ScheduleController(), permanent: false);
   }
 }

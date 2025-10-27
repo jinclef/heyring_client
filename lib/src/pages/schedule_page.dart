@@ -1,3 +1,4 @@
+// lib/src/pages/schedule_page.dart - WidgetsBindingObserver 추가
 import 'dart:math' as math;
 import 'dart:ui';
 import 'package:flutter/material.dart';
@@ -8,12 +9,20 @@ import '../controllers/auth_controller.dart';
 import '../routes/app_routes.dart';
 import '../widgets/schedule_item_tile.dart';
 
-class SchedulePage extends GetView<ScheduleController> {
+class SchedulePage extends GetView<ScheduleController> with WidgetsBindingObserver {
   const SchedulePage({super.key});
 
   @override
   Widget build(BuildContext context) {
     final p = context.appPalette;
+
+    // 페이지가 보일 때마다 스크롤 실행
+    WidgetsBinding.instance.addObserver(this);
+
+    // 빌드 후 스크롤
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      controller.scrollToToday();
+    });
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -33,36 +42,38 @@ class SchedulePage extends GetView<ScheduleController> {
         leading: IconButton(
           icon: Transform(
             alignment: Alignment.center,
-            transform: Matrix4.rotationY(math.pi), // 좌우 반전
+            transform: Matrix4.rotationY(math.pi),
             child: const Icon(Icons.logout),
           ),
           onPressed: () async {
-            // 로딩 표시
             Get.dialog(
               const Center(child: CircularProgressIndicator()),
               barrierDismissible: false,
             );
 
-            // 백엔드에 로그아웃 요청
-            final success = await Get.find<AuthController>().logoutDevice();
-
-            // 로딩 닫기
+            await Get.find<AuthController>().logoutDevice();
             Get.back();
-
-            if (!success) {
-              Get.snackbar('알림', '로그아웃 처리 중 문제가 발생했습니다');
-            }
           },
         ),
         title: Obx(() => Text(
-          controller.monthTitleKr(controller.currentMonth.value),
+          controller.displayMonthYear,
           style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 18),
         )),
         centerTitle: true,
         actions: [
           IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: controller.refresh,
+          ),
+          IconButton(
             icon: const Icon(Icons.settings, color: Color(0xFFBEBEBE)),
-            onPressed: () => Get.toNamed(Routes.timeSettingsHome),
+            onPressed: () async {
+              await Get.toNamed(Routes.timeSettingsHome);
+              // 돌아왔을 때 스크롤
+              Future.delayed(const Duration(milliseconds: 100), () {
+                controller.scrollToToday();
+              });
+            },
           ),
         ],
       ),
@@ -70,13 +81,29 @@ class SchedulePage extends GetView<ScheduleController> {
         children: [
           Expanded(
             child: Obx(() {
+              if (controller.isLoading.value) {
+                return const Center(child: CircularProgressIndicator());
+              }
+
               final items = controller.days;
-              return ListView.separated(
-                itemCount: items.length,
-                separatorBuilder: (_, __) => Divider(height: 1, color: p.stroke100),
-                itemBuilder: (_, i) => ScheduleItemTile(
-                  date: items[i].date,
-                  callAt: items[i].callAt,
+
+              return RefreshIndicator(
+                onRefresh: controller.refresh,
+                child: ListView.separated(
+                  controller: controller.scrollController,
+                  itemCount: items.length,
+                  separatorBuilder: (_, __) => Divider(height: 1, color: p.stroke100),
+                  itemBuilder: (_, i) {
+                    final isToday = i == controller.todayIndex;
+                    return ScheduleItemTile(
+                      date: items[i].date,
+                      callAt: items[i].callAt,
+                      // isCompleted: items[i].isCompleted,
+                      // isSkipped: items[i].isSkipped,
+                      // scheduleId: items[i].scheduleId,
+                      // isToday: isToday,
+                    );
+                  },
                 ),
               );
             }),

@@ -36,7 +36,7 @@ class ScheduleItemTile extends StatelessWidget {
     TextStyle timeStyle = TextStyle(color: p.typo800);
     TextStyle dayStyle = TextStyle(
       color: p.typo400,
-      fontWeight: today ? FontWeight.w700 : FontWeight.w400,
+      fontWeight: today ? FontWeight.w700 : FontWeight.w500,
     );
 
     if (isCompleted) {
@@ -81,12 +81,12 @@ class ScheduleItemTile extends StatelessWidget {
                   child: Text(
                     today ? "오늘" : const ['월','화','수','목','금','토','일'][date.weekday - 1],
                     textAlign: TextAlign.center,
-                    style: dayStyle.copyWith(fontSize: 12),
+                    style: dayStyle.copyWith(fontSize: 10, height: 1.5, letterSpacing: -0.10),
                   ),
                 ),
                 SizedBox(
                   width: 22,
-                  child: Text('${date.day}', textAlign: TextAlign.center, style: dayStyle),
+                  child: Text('${date.day}', textAlign: TextAlign.center, style: dayStyle.copyWith(fontSize: 16, height: 1.62, letterSpacing: -0.10)),
                 ),
               ],
             ),
@@ -110,7 +110,7 @@ class ScheduleItemTile extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(width: 8),
-                        if (today && !isCompleted)
+                        if (today && hasCall && !isCompleted)
                           Container(
                             width: 4,
                             height: 4,
