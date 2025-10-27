@@ -36,9 +36,22 @@ class SchedulePage extends GetView<ScheduleController> {
             transform: Matrix4.rotationY(math.pi), // 좌우 반전
             child: const Icon(Icons.logout),
           ),
-          onPressed: () {
-            Get.find<AuthController>().logout();
-            Get.offAllNamed(Routes.login);
+          onPressed: () async {
+            // 로딩 표시
+            Get.dialog(
+              const Center(child: CircularProgressIndicator()),
+              barrierDismissible: false,
+            );
+
+            // 백엔드에 로그아웃 요청
+            final success = await Get.find<AuthController>().logoutDevice();
+
+            // 로딩 닫기
+            Get.back();
+
+            if (!success) {
+              Get.snackbar('알림', '로그아웃 처리 중 문제가 발생했습니다');
+            }
           },
         ),
         title: Obx(() => Text(

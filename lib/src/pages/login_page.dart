@@ -54,7 +54,7 @@ class _LoginPageState extends State<LoginPage> {
                       ? null
                       : () async {
                     setState(() => loading = true);
-                    final ok = await Get.find<AuthController>().loginWithId(idCtrl.text);
+                    final ok = await Get.find<AuthController>().login(idCtrl.text);
                     setState(() => loading = false);
                     if (!ok) {
                       Get.snackbar('로그인 실패', 'id를 확인해주세요');
