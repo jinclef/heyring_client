@@ -53,7 +53,7 @@ class HatchPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    // ✅ 1) 먼저 현재 위젯 경계로 클리핑(넘침 방지)
+    // 1) 먼저 현재 위젯 경계로 클리핑(넘침 방지)
     final rect = Offset.zero & size;
     if (borderRadius != null) {
       final rrect = borderRadius!.toRRect(rect);

@@ -50,14 +50,14 @@ class _LoginPageState extends State<LoginPage> {
                 width: double.infinity,
                 height: 52,
                 child: ElevatedButton(
-                  onPressed: loading ? null : () async {
+                  onPressed: loading
+                      ? null
+                      : () async {
                     setState(() => loading = true);
                     final ok = await Get.find<AuthController>().loginWithId(idCtrl.text);
                     setState(() => loading = false);
-                    if (ok) {
-                      Get.offAllNamed(Routes.schedule);
-                    } else {
-                      Get.snackbar('로그인 실패', 'id를 입력해주세요');
+                    if (!ok) {
+                      Get.snackbar('로그인 실패', 'id를 확인해주세요');
                     }
                   },
                   style: ElevatedButton.styleFrom(
