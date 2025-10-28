@@ -10,6 +10,7 @@ class AppPalette extends ThemeExtension<AppPalette> {
   final Color typo800;
   final Color typo600;
   final Color typo400;
+  final Color typo300;
   final Color typo200; // 가장 연함
 
   // === stroke (선/구분선) ===
@@ -23,6 +24,7 @@ class AppPalette extends ThemeExtension<AppPalette> {
   final Color dotMuted;
 
   // === bg (배경) ===
+  final Color bgHeader;
   final Color bgFilled;
   final Color bgEmpty;
 
@@ -32,6 +34,7 @@ class AppPalette extends ThemeExtension<AppPalette> {
     required this.typo800,
     required this.typo600,
     required this.typo400,
+    required this.typo300,
     required this.typo200,
     required this.stroke100,
     required this.stroke200,
@@ -41,6 +44,7 @@ class AppPalette extends ThemeExtension<AppPalette> {
     required this.dotMuted,
     required this.bgFilled,
     required this.bgEmpty,
+    required this.bgHeader,
   });
 
   /// 라이트 팔레트
@@ -51,6 +55,7 @@ class AppPalette extends ThemeExtension<AppPalette> {
     typo800: Color(0xFF2E2E2E),
     typo600: Color(0xFF73727C),
     typo400: Color(0xFF959595),
+    typo300: Color(0xFF949494),
     typo200: Color(0xFFD9D9D9),
 
     // stroke (밝은 → 진한)
@@ -64,6 +69,7 @@ class AppPalette extends ThemeExtension<AppPalette> {
     dotMuted: Color(0xFFD7D7D7),
 
     // fill
+    bgHeader: Color(0xFFF7F7F7),
     bgFilled: Color(0xFFF9F9F9),
     bgEmpty: Color(0xFFFFFFFF),
   );
@@ -77,6 +83,7 @@ class AppPalette extends ThemeExtension<AppPalette> {
     typo800: Color(0xFF959595),
     typo600: Color(0xFFBBBBBB),
     typo400: Color(0xFFD7D7D7),
+    typo300: Color(0xFFEFEFEF),
     typo200: Color(0xFF2A2A2B),
 
     // stroke (선 → 반전)
@@ -90,6 +97,7 @@ class AppPalette extends ThemeExtension<AppPalette> {
     dotMuted: Color(0xFF73727C),
 
     // 배경 (filled=어두운, empty=검정에 가까움)
+    bgHeader: Color(0xFFF7F7F7),
     bgFilled: Color(0xFF242424),
     bgEmpty: Color(0xFF000000),
   );
@@ -102,6 +110,7 @@ class AppPalette extends ThemeExtension<AppPalette> {
     Color? typo800,
     Color? typo600,
     Color? typo400,
+    Color? typo300,
     Color? typo200,
     Color? stroke100,
     Color? stroke200,
@@ -109,6 +118,7 @@ class AppPalette extends ThemeExtension<AppPalette> {
     Color? stroke400,
     Color? dotPrimary,
     Color? dotMuted,
+    Color? bgHeader,
     Color? bgFilled,
     Color? bgEmpty,
   }) {
@@ -118,6 +128,7 @@ class AppPalette extends ThemeExtension<AppPalette> {
       typo800: typo800 ?? this.typo800,
       typo600: typo600 ?? this.typo600,
       typo400: typo400 ?? this.typo400,
+      typo300: typo300 ?? this.typo300,
       typo200: typo200 ?? this.typo200,
       stroke100: stroke100 ?? this.stroke100,
       stroke200: stroke200 ?? this.stroke200,
@@ -125,6 +136,7 @@ class AppPalette extends ThemeExtension<AppPalette> {
       stroke400: stroke400 ?? this.stroke400,
       dotPrimary: dotPrimary ?? this.dotPrimary,
       dotMuted: dotMuted ?? this.dotMuted,
+      bgHeader: bgHeader ?? this.bgHeader,
       bgFilled: bgFilled ?? this.bgFilled,
       bgEmpty: bgEmpty ?? this.bgEmpty,
     );
@@ -141,6 +153,7 @@ class AppPalette extends ThemeExtension<AppPalette> {
       typo800: _l(typo800, other.typo800),
       typo600: _l(typo600, other.typo600),
       typo400: _l(typo400, other.typo400),
+      typo300: _l(typo300, other.typo300),
       typo200: _l(typo200, other.typo200),
       stroke100: _l(stroke100, other.stroke100),
       stroke200: _l(stroke200, other.stroke200),
@@ -148,6 +161,7 @@ class AppPalette extends ThemeExtension<AppPalette> {
       stroke400: _l(stroke400, other.stroke400),
       dotPrimary: _l(dotPrimary, other.dotPrimary),
       dotMuted: _l(dotMuted, other.dotMuted),
+      bgHeader: _l(bgHeader, other.bgHeader),
       bgFilled: _l(bgFilled, other.bgFilled),
       bgEmpty: _l(bgEmpty, other.bgEmpty),
     );

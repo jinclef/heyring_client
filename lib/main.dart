@@ -1,12 +1,33 @@
-// lib/main.dart
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:get/get.dart';
-import 'theme/palette.dart'; // 방금 만든 AppPalette 파일
+import 'theme/palette.dart';
+import 'src/routes/app_routes.dart';
+import 'src/routes/app_pages.dart';
+import 'src/bindings/initial_binding.dart';
+import 'src/services/storage_service.dart';
+import 'src/services/auth_service.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // 1) StorageService를 가장 먼저 초기화 & 주입
+  await Get.putAsync<StorageService>(
+        () async => await StorageService().init(),
+    permanent: true,
+  );
+
+  // 2) 테마 컨트롤러 주입
   Get.put(ThemeController(), permanent: true);
-  runApp(const MyApp());
+
+  // 3) 초기 DI 바인딩 (AuthController 등)
+  InitialBinding().dependencies();
+
+  // 4) 초기 토큰 여부 확인 (네비게이션 호출은 하지 않음)
+  final hasToken = await AuthService().hasToken();
+
+  // 5) 앱 실행
+  runApp(HeyringApp(loggedInInitially: hasToken));
 }
 
 /// 테마 전환 컨트롤러
@@ -27,8 +48,21 @@ class ThemeController extends GetxController {
   }
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class HeyringApp extends StatelessWidget {
+  const HeyringApp({super.key, required this.loggedInInitially});
+
+  final bool loggedInInitially;
+
+  // 전역 폰트 지정
+  static const _kFontFamily = 'Pretendard';
+  static const _kFontFallback = <String>[
+    'Apple SD Gothic Neo', // iOS/macOS
+    'Noto Sans CJK KR',    // 일부 안드로이드/윈도우
+    'Noto Sans KR',
+    'Segoe UI',
+    'Roboto',
+    'sans-serif',
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -36,91 +70,52 @@ class MyApp extends StatelessWidget {
 
     return Obx(() {
       return GetMaterialApp(
-        title: 'Palette Demo',
+        title: '헤이링',
         debugShowCheckedModeBanner: false,
-        // 라이트 테마에 AppPalette.light 주입
+        locale: const Locale('ko', 'KR'),
+        supportedLocales: const [
+          Locale('ko', 'KR'),
+          Locale('en', 'US'),
+        ],
+        localizationsDelegates: const [
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+
+        // 라이트 테마
         theme: ThemeData(
           useMaterial3: true,
           scaffoldBackgroundColor: AppPalette.light.bgFilled,
           extensions: const [AppPalette.light],
+          fontFamily: _kFontFamily,
+          fontFamilyFallback: _kFontFallback,
+          textTheme: Typography.blackMountainView.apply(
+            bodyColor: AppPalette.light.typo950,
+            displayColor: AppPalette.light.typo950,
+          ),
         ),
-        // 다크 테마에 AppPalette.dark 주입
+
+        // 다크 테마
         darkTheme: ThemeData(
           useMaterial3: true,
           scaffoldBackgroundColor: AppPalette.dark.bgFilled,
           extensions: const [AppPalette.dark],
+          fontFamily: _kFontFamily,
+          fontFamilyFallback: _kFontFallback,
+          textTheme: Typography.whiteMountainView.apply(
+            bodyColor: AppPalette.dark.typo200,
+            displayColor: AppPalette.dark.typo200,
+          ),
         ),
+
         themeMode: themeC.mode.value, // GetX로 모드 제어
-        home: const HomePage(),
+
+        // 초기 라우트: 토큰 유무로 결정 (여기서만 결정, 사전 네비게이션 호출 금지)
+        initialRoute: loggedInInitially ? Routes.schedule : Routes.login,
+
+        getPages: AppPages.pages,
       );
     });
-  }
-}
-
-class HomePage extends StatelessWidget {
-  const HomePage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final p = context.appPalette; // 확장으로 바로 팔레트 접근
-    final themeC = Get.find<ThemeController>();
-
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: p.bgEmpty,
-        title: Text('AppPalette x GetX', style: TextStyle(color: p.typo900)),
-        centerTitle: false,
-      ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: p.bgEmpty,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: p.stroke200),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('타이틀(typo900)', style: TextStyle(color: p.typo900, fontSize: 18, fontWeight: FontWeight.w600)),
-                const SizedBox(height: 8),
-                Text('본문(typo600)', style: TextStyle(color: p.typo600)),
-                const SizedBox(height: 8),
-                Divider(color: p.stroke100),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Icon(Icons.fiber_manual_record, color: p.dotPrimary, size: 12),
-                    const SizedBox(width: 8),
-                    Text('상태: 활성', style: TextStyle(color: p.typo800)),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-          FilledButton(
-            onPressed: themeC.toggle,
-            style: FilledButton.styleFrom(
-              backgroundColor: p.dotPrimary, // 포인트 컬러도 재사용 가능
-              foregroundColor: p.bgEmpty,
-            ),
-            child: const Text('라이트/다크 토글'),
-          ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            children: [
-              OutlinedButton(onPressed: () => themeC.setMode(ThemeMode.light), child: const Text('Light')),
-              OutlinedButton(onPressed: () => themeC.setMode(ThemeMode.dark), child: const Text('Dark')),
-              OutlinedButton(onPressed: () => themeC.setMode(ThemeMode.system), child: const Text('System')),
-            ],
-          ),
-        ],
-      ),
-      backgroundColor: p.bgFilled,
-    );
   }
 }
