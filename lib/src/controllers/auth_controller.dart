@@ -1,9 +1,12 @@
+// lib/src/controllers/auth_controller.dart
 import 'package:get/get.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'dart:io';
 import '../services/storage_service.dart';
 import '../services/api_client.dart';
 import '../routes/app_routes.dart';
+import 'schedule_controller.dart';
+import 'time_settings_controller.dart';
 
 class AuthController extends GetxController {
   final isLoggedIn = false.obs;
@@ -13,11 +16,13 @@ class AuthController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    // isLoggedIn 변경 감지하여 자동 라우팅
+
     ever(isLoggedIn, (loggedIn) {
       if (loggedIn) {
+        _initializeControllers();
         Get.offAllNamed(Routes.schedule);
       } else {
+        _clearControllers();
         if (Get.currentRoute != Routes.login) {
           Get.offAllNamed(Routes.login);
         }
@@ -25,10 +30,32 @@ class AuthController extends GetxController {
     });
   }
 
-  // 로그인 요청
+  void _initializeControllers() {
+    if (Get.isRegistered<ScheduleController>()) {
+      final scheduleController = Get.find<ScheduleController>();
+      scheduleController.fetchTwoWeeks();
+    }
+
+    if (Get.isRegistered<TimeSettingsController>()) {
+      final timeSettingsController = Get.find<TimeSettingsController>();
+      timeSettingsController.fetchFromServer();
+    }
+  }
+
+  void _clearControllers() {
+    if (Get.isRegistered<ScheduleController>()) {
+      final scheduleController = Get.find<ScheduleController>();
+      scheduleController.schedules.clear();
+    }
+
+    if (Get.isRegistered<TimeSettingsController>()) {
+      final timeSettingsController = Get.find<TimeSettingsController>();
+      timeSettingsController.callTimes.clear();
+    }
+  }
+
   Future<bool> login(String loginId) async {
     try {
-      // 디바이스 정보 수집
       final deviceInfo = DeviceInfoPlugin();
 
       String platform;
@@ -64,12 +91,11 @@ class AuthController extends GetxController {
       if (response.statusCode == 200 && response.data != null) {
         final data = response.data as Map<String, dynamic>;
 
-        // 토큰 저장
         await storage.setAuthToken(data['access_token'] as String);
         await storage.setRefreshToken(data['refresh_token'] as String);
         storage.userId = (data['user'] as Map)['id'] as String;
 
-        isLoggedIn.value = true; // 이 시점에서 자동 라우팅 발생
+        isLoggedIn.value = true;
         return true;
       }
       return false;
@@ -79,7 +105,6 @@ class AuthController extends GetxController {
     }
   }
 
-  // 토큰 갱신
   Future<bool> refreshToken() async {
     try {
       final refreshToken = await storage.getRefreshToken();
@@ -93,7 +118,6 @@ class AuthController extends GetxController {
       if (response.statusCode == 200 && response.data != null) {
         final data = response.data as Map<String, dynamic>;
 
-        // 새 토큰 저장
         await storage.setAuthToken(data['access_token'] as String);
         await storage.setRefreshToken(data['refresh_token'] as String);
 
@@ -106,7 +130,6 @@ class AuthController extends GetxController {
     }
   }
 
-  // 자동 로그인 시도
   Future<void> tryAutoLogin() async {
     await storage.init();
 
@@ -114,7 +137,6 @@ class AuthController extends GetxController {
     final userId = storage.userId;
 
     if (token != null && userId != null) {
-      // 토큰 유효성 검증
       try {
         final response = await _api.dio.get('/auth/me');
         if (response.statusCode == 200) {
@@ -122,7 +144,6 @@ class AuthController extends GetxController {
           return;
         }
       } catch (e) {
-        // 401이면 refresh 시도
         if (await refreshToken()) {
           isLoggedIn.value = true;
           return;
@@ -130,17 +151,14 @@ class AuthController extends GetxController {
       }
     }
 
-    // 실패시 로그아웃 처리
     await logout();
   }
 
-  // 로그아웃
   Future<void> logout() async {
     await storage.clearAuth();
-    isLoggedIn.value = false; // 이 시점에서 자동으로 로그인 페이지로 이동
+    isLoggedIn.value = false;
   }
 
-  // 디바이스 로그아웃 (백엔드 호출)
   Future<bool> logoutDevice() async {
     try {
       final deviceInfo = DeviceInfoPlugin();
@@ -161,21 +179,24 @@ class AuthController extends GetxController {
         deviceId = 'web-device';
       }
 
-      final response = await _api.dio.post(
-        '/auth/logout/device',
-        data: {
-          'platform': platform,
-          if (deviceId != null) 'device_id': deviceId,
-        },
-      );
-
-      if (response.statusCode == 200) {
-        await logout();
-        return true;
+      try {
+        await _api.dio.post(
+          '/auth/logout/device',
+          data: {
+            'platform': platform,
+            if (deviceId != null) 'device_id': deviceId,
+          },
+        );
+      } catch (e) {
+        // API 에러 무시
       }
-      return false;
+
+      // API 성공/실패 관계없이 로그아웃
+      await logout();
+      return true;
     } catch (e) {
       print('Logout device error: $e');
+      await logout();
       return false;
     }
   }

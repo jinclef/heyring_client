@@ -202,14 +202,15 @@ class ScheduleController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    fetchTwoWeeks();
+    // fetchTwoWeeks();
   }
 
   @override
   void onReady() {
     super.onReady();
-    // 페이지가 준비되면 스크롤
-    scrollToToday();
+    if (schedules.isNotEmpty) {
+      scrollToToday();
+    }
   }
 
   @override
