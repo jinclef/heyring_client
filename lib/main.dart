@@ -8,6 +8,7 @@ import 'src/routes/app_pages.dart';
 import 'src/bindings/initial_binding.dart';
 import 'src/services/storage_service.dart';
 import 'src/services/auth_service.dart';
+import 'src/services/notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -28,16 +29,19 @@ void main() async {
     permanent: true,
   );
 
-  // 2) 테마 컨트롤러 주입
+  // 2) NotificationService 초기화
+  await NotificationService().init();
+
+  // 3) 테마 컨트롤러 주입
   Get.put(ThemeController(), permanent: true);
 
-  // 3) 초기 DI 바인딩 (AuthController 등)
+  // 4) 초기 DI 바인딩 (AuthController 등)
   InitialBinding().dependencies();
 
-  // 4) 초기 토큰 여부 확인 (네비게이션 호출은 하지 않음)
+  // 5) 초기 토큰 여부 확인 (네비게이션 호출은 하지 않음)
   final hasToken = await AuthService().hasToken();
 
-  // 5) 앱 실행
+  // 6) 앱 실행
   runApp(HeyringApp(loggedInInitially: hasToken));
 }
 

@@ -39,7 +39,14 @@ class TimeSettingsController extends GetxController {
         (exceptKey == null || ct.uniqueKey != exceptKey));
   }
 
-  // 추가
+  /// 스케줄 컨트롤러 새로고침 (알림도 자동 재예약됨)
+  Future<void> _refreshSchedules() async {
+    if (Get.isRegistered<ScheduleController>()) {
+      await Get.find<ScheduleController>().refresh();
+    }
+  }
+
+  // 추가 + 알림 동기화
   Future<void> add(TimeOfDay time, Set<int> weekdays) async {
     final filtered = weekdays.where((w) => !isWeekdayTaken(w)).toSet();
     if (filtered.isEmpty) {
@@ -62,10 +69,8 @@ class TimeSettingsController extends GetxController {
         final newCallTimes = CallTime.fromScheduleSetting(setting);
         callTimes.addAll(newCallTimes);
 
-        // 스케줄 새로고침
-        if (Get.isRegistered<ScheduleController>()) {
-          await Get.find<ScheduleController>().refresh();
-        }
+        // 스케줄 새로고침 (알림도 자동 재예약됨)
+        await _refreshSchedules();
       }
     } catch (e) {
       print('Add setting error: $e');
@@ -75,7 +80,7 @@ class TimeSettingsController extends GetxController {
     }
   }
 
-  // 시간 또는 요일 수정
+  // 시간 또는 요일 수정 + 알림 재동기화
   Future<void> updateCallTime(String uniqueKey, {TimeOfDay? newTime, Set<int>? newWeekdays}) async {
     final ct = callTimes.firstWhereOrNull((e) => e.uniqueKey == uniqueKey);
     if (ct == null) return;
@@ -113,10 +118,8 @@ class TimeSettingsController extends GetxController {
         final newCallTimes = CallTime.fromScheduleSetting(setting);
         callTimes.addAll(newCallTimes);
 
-        // 스케줄 새로고침
-        if (Get.isRegistered<ScheduleController>()) {
-          await Get.find<ScheduleController>().refresh();
-        }
+        // 스케줄 새로고침 (알림도 자동 재예약됨)
+        await _refreshSchedules();
       }
     } catch (e) {
       print('Update setting error: $e');
@@ -126,7 +129,7 @@ class TimeSettingsController extends GetxController {
     }
   }
 
-  // 삭제
+  // 삭제 + 관련 알림 취소
   Future<void> remove(String uniqueKey) async {
     final ct = callTimes.firstWhereOrNull((e) => e.uniqueKey == uniqueKey);
     if (ct == null) return;
@@ -139,10 +142,8 @@ class TimeSettingsController extends GetxController {
       if (success) {
         callTimes.removeWhere((e) => e.settingId == ct.settingId);
 
-        // 스케줄 새로고침
-        if (Get.isRegistered<ScheduleController>()) {
-          await Get.find<ScheduleController>().refresh();
-        }
+        // 스케줄 새로고침 (알림도 자동 재예약됨)
+        await _refreshSchedules();
       }
     } catch (e) {
       print('Delete setting error: $e');
