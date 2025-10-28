@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:get/get.dart';
 import 'theme/palette.dart';
@@ -10,6 +11,16 @@ import 'src/services/auth_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // iOS 상태바 스타일 설정
+  SystemChrome.setSystemUIOverlayStyle(
+    const SystemUiOverlayStyle(
+      statusBarBrightness: Brightness.light, // iOS: 밝은 배경에 어두운 텍스트
+      statusBarIconBrightness: Brightness.dark, // Android
+      systemNavigationBarColor: Colors.white,
+      systemNavigationBarIconBrightness: Brightness.dark,
+    ),
+  );
 
   // 1) StorageService를 가장 먼저 초기화 & 주입
   await Get.putAsync<StorageService>(
@@ -37,6 +48,7 @@ class ThemeController extends GetxController {
   void setMode(ThemeMode m) {
     mode.value = m;
     Get.changeThemeMode(m);
+    _updateSystemUI(m);
   }
 
   void toggle() {
@@ -45,6 +57,18 @@ class ThemeController extends GetxController {
             WidgetsBinding.instance.platformDispatcher.platformBrightness ==
                 Brightness.dark);
     setMode(isDark ? ThemeMode.light : ThemeMode.dark);
+  }
+
+  void _updateSystemUI(ThemeMode mode) {
+    final brightness = mode == ThemeMode.dark ? Brightness.dark : Brightness.light;
+    SystemChrome.setSystemUIOverlayStyle(
+      SystemUiOverlayStyle(
+        statusBarBrightness: brightness == Brightness.dark ? Brightness.dark : Brightness.light,
+        statusBarIconBrightness: brightness == Brightness.dark ? Brightness.light : Brightness.dark,
+        systemNavigationBarColor: brightness == Brightness.dark ? Colors.black : Colors.white,
+        systemNavigationBarIconBrightness: brightness == Brightness.dark ? Brightness.light : Brightness.dark,
+      ),
+    );
   }
 }
 

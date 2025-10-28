@@ -1,4 +1,5 @@
 // lib/src/services/api_client.dart
+import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get/get.dart' as gx;
@@ -11,7 +12,21 @@ class ApiClient {
 
   final _storage = const FlutterSecureStorage();
 
-  static const _rawBase = "http://10.0.2.2:8000";
+  // 플랫폼별 baseUrl 설정
+  static String get _rawBase {
+    if (Platform.isIOS) {
+      // iOS 시뮬레이터는 localhost 사용
+      // 실기기 테스트 시에는 실제 서버 IP로 변경 필요
+      return "http://localhost:8000";
+      // 실기기 테스트 시: "http://192.168.x.x:8000"
+    } else if (Platform.isAndroid) {
+      // Android 에뮬레이터는 10.0.2.2 사용
+      return "http://10.0.2.2:8000";
+    } else {
+      // Web 또는 기타
+      return "http://localhost:8000";
+    }
+  }
 
   bool _isRefreshing = false;
 

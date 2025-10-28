@@ -46,5 +46,21 @@
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
     <key>NSAllowsArbitraryLoads</key><true/>
+    <key>UIViewControllerBasedStatusBarAppearance</key>
+    <true/>
+
+    <!-- iOS 알림 권한 -->
+    <key>UIBackgroundModes</key>
+    <array>
+        <string>fetch</string>
+        <string>remote-notification</string>
+    </array>
+
+    <!-- 로컬 알림 사용 설명 (선택사항) -->
+    <key>NSUserNotificationsUsageDescription</key>
+    <string>전화 일정 알림을 보내기 위해 알림 권한이 필요합니다.</string>
+	<!-- 다크모드 지원 -->
+	<key>UIUserInterfaceStyle</key>
+	<string>Automatic</string>
 </dict>
 </plist>
