@@ -4,6 +4,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../theme/palette.dart';
+import '../controllers/notification_controller.dart';
 import '../controllers/schedule_controller.dart';
 import '../controllers/auth_controller.dart';
 import '../controllers/time_settings_controller.dart';
@@ -62,6 +63,7 @@ class SchedulePage extends GetView<ScheduleController> with WidgetsBindingObserv
         )),
         centerTitle: true,
         actions: [
+          // IconButton(onPressed: () => FlutterLocalNotification.scheduleTestNotification(), icon: const Icon(Icons.email)),
           IconButton(
             icon: const Icon(Icons.settings, color: Color(0xFFBEBEBE)),
             onPressed: () async {

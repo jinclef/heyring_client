@@ -20,6 +20,7 @@ class _LoginPageState extends State<LoginPage> {
     final p = context.appPalette;
 
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       backgroundColor: p.bgEmpty,
       body: SafeArea(
         child: Padding(

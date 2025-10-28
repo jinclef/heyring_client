@@ -1,6 +1,7 @@
 // lib/src/controllers/schedule_controller.dart
 import 'package:get/get.dart';
 import 'package:flutter/material.dart';
+import 'package:heyring_client/src/controllers/notification_controller.dart';
 import '../services/schedule_api.dart';
 import '../models/schedule_model.dart';
 
@@ -110,6 +111,7 @@ class ScheduleController extends GetxController {
     }
   }
 
+  /// 스케줄 데이터 가져오기 및 알림 동기화
   Future<void> fetchTwoWeeks() async {
     try {
       isLoading.value = true;
@@ -124,6 +126,9 @@ class ScheduleController extends GetxController {
 
       schedules.assignAll(items);
 
+      // 알림 동기화
+      await _syncNotifications();
+
       // 데이터 로드 후 항상 오늘로 스크롤
       Future.delayed(const Duration(milliseconds: 100), scrollToToday);
     } catch (e) {
@@ -134,6 +139,42 @@ class ScheduleController extends GetxController {
     }
   }
 
+  /// 스케줄과 알림 동기화
+  Future<void> _syncNotifications() async {
+    final now = DateTime.now();
+
+    // 현재 범위의 스케줄 중 미래 시간만 알림 예약
+    for (final schedule in schedules) {
+      if (schedule.isSkipped || schedule.isCompleted) {
+        // 건너뛰거나 완료된 스케줄은 알림 취소
+        await FlutterLocalNotification.cancelNotification(schedule.id);
+        continue;
+      }
+
+      final scheduleDateTime = DateTime(
+        schedule.scheduledDate.year,
+        schedule.scheduledDate.month,
+        schedule.scheduledDate.day,
+        schedule.scheduledTime.hour,
+        schedule.scheduledTime.minute,
+      );
+
+      if (scheduleDateTime.isAfter(now)) {
+        // 미래 스케줄은 알림 예약
+        await FlutterLocalNotification.scheduleNotification(
+          scheduleId: schedule.id,
+          dateTime: scheduleDateTime,
+          title: '통화',
+          body: '예정된 통화 시간입니다',
+        );
+      } else {
+        // 과거 스케줄은 알림 취소
+        await FlutterLocalNotification.cancelNotification(schedule.id);
+      }
+    }
+  }
+
+  /// 스케줄 시간 수정 + 알림 재예약
   Future<bool> updateScheduleTime(int scheduleId, TimeOfDay newTime) async {
     try {
       final schedule = await _api.updateSchedule(
@@ -142,7 +183,12 @@ class ScheduleController extends GetxController {
       );
 
       if (schedule != null) {
+        // 기존 알림 취소
+        await FlutterLocalNotification.cancelNotification(scheduleId);
+
+        // 스케줄 새로고침 (알림도 자동으로 재예약됨)
         await fetchTwoWeeks();
+
         return true;
       }
       return false;
@@ -152,11 +198,14 @@ class ScheduleController extends GetxController {
     }
   }
 
-// 스케줄 건너뛰기
+  /// 스케줄 건너뛰기 + 알림 취소
   Future<bool> skipSchedule(int scheduleId) async {
     try {
       final success = await _api.skipSchedule(scheduleId);
       if (success) {
+        // 알림 취소
+        await FlutterLocalNotification.cancelNotification(scheduleId);
+
         await fetchTwoWeeks();
       }
       return success;
@@ -166,11 +215,12 @@ class ScheduleController extends GetxController {
     }
   }
 
-// 스케줄 복원
+  /// 스케줄 복원 + 알림 재예약
   Future<bool> restoreSchedule(int scheduleId) async {
     try {
       final success = await _api.restoreSchedule(scheduleId);
       if (success) {
+        // 스케줄 새로고침 (알림도 자동으로 예약됨)
         await fetchTwoWeeks();
       }
       return success;
@@ -180,11 +230,14 @@ class ScheduleController extends GetxController {
     }
   }
 
-// 스케줄 삭제
+  /// 스케줄 삭제 + 알림 취소
   Future<bool> deleteSchedule(int scheduleId) async {
     try {
       final success = await _api.deleteSchedule(scheduleId);
       if (success) {
+        // 알림 취소
+        await FlutterLocalNotification.cancelNotification(scheduleId);
+
         await fetchTwoWeeks();
       }
       return success;
@@ -202,7 +255,7 @@ class ScheduleController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    // fetchTwoWeeks();
+    fetchTwoWeeks();
   }
 
   @override

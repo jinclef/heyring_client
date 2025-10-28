@@ -2,15 +2,26 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:get/get.dart';
+import 'package:heyring_client/src/controllers/notification_controller.dart';
 import 'theme/palette.dart';
 import 'src/routes/app_routes.dart';
 import 'src/routes/app_pages.dart';
 import 'src/bindings/initial_binding.dart';
 import 'src/services/storage_service.dart';
 import 'src/services/auth_service.dart';
+import 'package:timezone/data/latest_all.dart' as tz;
+import 'package:flutter_timezone/flutter_timezone.dart';
+import 'package:timezone/timezone.dart' as tz;
+
+Future<void> _initTimeZones() async {
+  tz.initializeTimeZones();
+  final String localTz = await FlutterTimezone.getLocalTimezone();
+  tz.setLocalLocation(tz.getLocation(localTz));
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await _initTimeZones();
 
   // iOS 상태바 스타일 설정
   SystemChrome.setSystemUIOverlayStyle(
@@ -28,16 +39,20 @@ void main() async {
     permanent: true,
   );
 
-  // 2) 테마 컨트롤러 주입
+  // 2) NotificationService 초기화
+  await FlutterLocalNotification.init();  // 플러그인 초기화
+  FlutterLocalNotification.requestNotificationPermission();
+
+  // 3) 테마 컨트롤러 주입
   Get.put(ThemeController(), permanent: true);
 
-  // 3) 초기 DI 바인딩 (AuthController 등)
+  // 4) 초기 DI 바인딩 (AuthController 등)
   InitialBinding().dependencies();
 
-  // 4) 초기 토큰 여부 확인 (네비게이션 호출은 하지 않음)
+  // 5) 초기 토큰 여부 확인 (네비게이션 호출은 하지 않음)
   final hasToken = await AuthService().hasToken();
 
-  // 5) 앱 실행
+  // 6) 앱 실행
   runApp(HeyringApp(loggedInInitially: hasToken));
 }
 
@@ -72,7 +87,7 @@ class ThemeController extends GetxController {
   }
 }
 
-class HeyringApp extends StatelessWidget {
+class HeyringApp extends StatefulWidget {
   const HeyringApp({super.key, required this.loggedInInitially});
 
   final bool loggedInInitially;
@@ -87,6 +102,16 @@ class HeyringApp extends StatelessWidget {
     'Roboto',
     'sans-serif',
   ];
+
+  @override
+  State<HeyringApp> createState() => _HeyringAppState();
+}
+
+class _HeyringAppState extends State<HeyringApp> {
+  @override
+  void initState() {
+    super.initState();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -112,8 +137,8 @@ class HeyringApp extends StatelessWidget {
           useMaterial3: true,
           scaffoldBackgroundColor: AppPalette.light.bgFilled,
           extensions: const [AppPalette.light],
-          fontFamily: _kFontFamily,
-          fontFamilyFallback: _kFontFallback,
+          fontFamily: HeyringApp._kFontFamily,
+          fontFamilyFallback: HeyringApp._kFontFallback,
           textTheme: Typography.blackMountainView.apply(
             bodyColor: AppPalette.light.typo950,
             displayColor: AppPalette.light.typo950,
@@ -125,8 +150,8 @@ class HeyringApp extends StatelessWidget {
           useMaterial3: true,
           scaffoldBackgroundColor: AppPalette.dark.bgFilled,
           extensions: const [AppPalette.dark],
-          fontFamily: _kFontFamily,
-          fontFamilyFallback: _kFontFallback,
+          fontFamily: HeyringApp._kFontFamily,
+          fontFamilyFallback: HeyringApp._kFontFallback,
           textTheme: Typography.whiteMountainView.apply(
             bodyColor: AppPalette.dark.typo200,
             displayColor: AppPalette.dark.typo200,
@@ -136,7 +161,7 @@ class HeyringApp extends StatelessWidget {
         themeMode: themeC.mode.value, // GetX로 모드 제어
 
         // 초기 라우트: 토큰 유무로 결정 (여기서만 결정, 사전 네비게이션 호출 금지)
-        initialRoute: loggedInInitially ? Routes.schedule : Routes.login,
+        initialRoute: widget.loggedInInitially ? Routes.schedule : Routes.login,
 
         getPages: AppPages.pages,
       );
