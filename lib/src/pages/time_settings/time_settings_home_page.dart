@@ -1,4 +1,4 @@
-// lib/src/pages/time_settings/time_settings_home_page.dart
+// lib/src/pages/time_settings/time_settings_home_page.dart - iOS SafeArea 추가
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -42,51 +42,54 @@ class TimeSettingsHomePage extends GetView<TimeSettingsController> {
           color: p.typo900,
         ),
       ),
-      body: Obx(() {
-        if (controller.isLoading.value && controller.callTimes.isEmpty) {
-          return const Center(child: CircularProgressIndicator());
-        }
+      // iOS SafeArea 추가
+      body: SafeArea(
+        child: Obx(() {
+          if (controller.isLoading.value && controller.callTimes.isEmpty) {
+            return const Center(child: CircularProgressIndicator());
+          }
 
-        final items = controller.callTimes;
-        if (items.isEmpty) {
-          return Center(
-            child: RichText(
-              textAlign: TextAlign.center,
-              text: TextSpan(
-                text: '언제 전화할까요?\n',
-                style: TextStyle(color: p.typo800, fontWeight: FontWeight.w700, fontSize: 18, height: 1.40),
-                children: [
-                  TextSpan(
-                    text: '아래 추가 버튼을 누르고\n전화 시간을 설정해주세요',
-                    style: TextStyle(color: p.typo300, fontWeight: FontWeight.w500, fontSize: 16, height: 1.62, letterSpacing: -0.10),
-                  ),
-                ],
+          final items = controller.callTimes;
+          if (items.isEmpty) {
+            return Center(
+              child: RichText(
+                textAlign: TextAlign.center,
+                text: TextSpan(
+                  text: '언제 전화할까요?\n',
+                  style: TextStyle(color: p.typo800, fontWeight: FontWeight.w700, fontSize: 18, height: 1.40),
+                  children: [
+                    TextSpan(
+                      text: '아래 추가 버튼을 누르고\n전화 시간을 설정해주세요',
+                      style: TextStyle(color: p.typo300, fontWeight: FontWeight.w500, fontSize: 16, height: 1.62, letterSpacing: -0.10),
+                    ),
+                  ],
+                ),
               ),
-            ),
-          );
-        }
-
-        return ListView.separated(
-          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-          itemCount: items.length,
-          separatorBuilder: (_, __) => const SizedBox(height: 12),
-          itemBuilder: (_, i) {
-            final ct = items[i];
-            return TimeRowTile(
-              weekText: _weekLabel(ct.weekdays),
-              timeText: _timeLabel(ct.time),
-              onTap: () {
-                showModalBottomSheet(
-                  context: context,
-                  isScrollControlled: true,
-                  backgroundColor: Colors.transparent,
-                  builder: (_) => TimeEditSheet(callTimeId: ct.uniqueKey),
-                );
-              },
             );
-          },
-        );
-      }),
+          }
+
+          return ListView.separated(
+            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+            itemCount: items.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 12),
+            itemBuilder: (_, i) {
+              final ct = items[i];
+              return TimeRowTile(
+                weekText: _weekLabel(ct.weekdays),
+                timeText: _timeLabel(ct.time),
+                onTap: () {
+                  showModalBottomSheet(
+                    context: context,
+                    isScrollControlled: true,
+                    backgroundColor: Colors.transparent,
+                    builder: (_) => TimeEditSheet(callTimeId: ct.uniqueKey),
+                  );
+                },
+              );
+            },
+          );
+        }),
+      ),
       floatingActionButton: FloatingActionButton(
         backgroundColor: p.typo900,
         shape: const CircleBorder(),

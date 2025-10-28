@@ -1,4 +1,4 @@
-// lib/src/pages/schedule_page.dart - WidgetsBindingObserver 추가
+// lib/src/pages/schedule_page.dart - iOS SafeArea 추가
 import 'dart:math' as math;
 import 'dart:ui';
 import 'package:flutter/material.dart';
@@ -62,10 +62,6 @@ class SchedulePage extends GetView<ScheduleController> with WidgetsBindingObserv
         )),
         centerTitle: true,
         actions: [
-          // IconButton(
-          //   icon: const Icon(Icons.refresh),
-          //   onPressed: controller.refresh,
-          // ),
           IconButton(
             icon: const Icon(Icons.settings, color: Color(0xFFBEBEBE)),
             onPressed: () async {
@@ -85,35 +81,38 @@ class SchedulePage extends GetView<ScheduleController> with WidgetsBindingObserv
           ),
         ],
       ),
-      body: Column(
-        children: [
-          Expanded(
-            child: Obx(() {
-              if (controller.isLoading.value) {
-                return const Center(child: CircularProgressIndicator());
-              }
+      // iOS SafeArea 추가
+      body: SafeArea(
+        child: Column(
+          children: [
+            Expanded(
+              child: Obx(() {
+                if (controller.isLoading.value) {
+                  return const Center(child: CircularProgressIndicator());
+                }
 
-              final items = controller.days;
+                final items = controller.days;
 
-              return RefreshIndicator(
-                onRefresh: controller.refresh,
-                child: ListView.separated(
-                  controller: controller.scrollController,
-                  itemCount: items.length,
-                  separatorBuilder: (_, __) => Divider(height: 1, color: p.stroke100),
-                  itemBuilder: (_, i) {
-                    return ScheduleItemTile(
-                      date: items[i].date,
-                      callAt: items[i].callAt,
-                      scheduleId: items[i].scheduleId,
-                      isSkipped: items[i].isSkipped,
-                    );
-                  },
-                ),
-              );
-            }),
-          ),
-        ],
+                return RefreshIndicator(
+                  onRefresh: controller.refresh,
+                  child: ListView.separated(
+                    controller: controller.scrollController,
+                    itemCount: items.length,
+                    separatorBuilder: (_, __) => Divider(height: 1, color: p.stroke100),
+                    itemBuilder: (_, i) {
+                      return ScheduleItemTile(
+                        date: items[i].date,
+                        callAt: items[i].callAt,
+                        scheduleId: items[i].scheduleId,
+                        isSkipped: items[i].isSkipped,
+                      );
+                    },
+                  ),
+                );
+              }),
+            ),
+          ],
+        ),
       ),
     );
   }

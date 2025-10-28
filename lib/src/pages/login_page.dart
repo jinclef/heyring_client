@@ -57,7 +57,7 @@ class _LoginPageState extends State<LoginPage> {
                     final ok = await Get.find<AuthController>().login(idCtrl.text);
                     setState(() => loading = false);
                     if (!ok) {
-                      Get.snackbar('로그인 실패', 'id를 확인해주세요');
+                      // Get.snackbar('로그인 실패', 'id를 확인해주세요');
                     }
                   },
                   style: ElevatedButton.styleFrom(
